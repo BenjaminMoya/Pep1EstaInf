@@ -1,0 +1,167 @@
+---
+title: "Pep1"
+output: html_document
+date: "2025-05-12"
+---
+
+1) El geek-o tiene la percepcion de que cuatro de sus consolas favoritas, a saber: GameBoy Advance, Nintendo Wii, Playstation 4, Xbox 360, alcanzaron en su momento niveles similares de popularidad en las regiones del mundo fuera de Norteamerica, Europa y Japon. Para confirmar esta idea, se les pide realizar un analisis inferencial, con 95% de confianza, explicarlo y justificando paso a paso el procedimiento seguido(hipotesis contrastadas, prueba estadistica usada, verificacion de condiciones, etc.), y entregar una respuesta concreta a el geek-o.
+
+R: Como queremos saber si las 4 consolas alcanzaron niveles similares de popularidad fuera de las regiones descritas, debemos inferir sobre la media de sus ventas en la columna "Otros". De esta manera como la variable independiente posee 4 niveles, a priori, se ocupara una prueba ANOVA de una via.
+
+Las hipotesis a contrastar son las siguientes:
+H0: Las medias de popularidad de cada consola, en regiones fuera de Norteamerica,Europa y Japon, no presenta diferencias significativas entre pares de comparacion. 
+Ha: Las medias de popularidad de cada consola, en regiones fuera de Norteamerica,Europa y Japon, presentan diferencias significativas en al menos 1 par de comparacion. 
+
+```{r message=FALSE, warning=FALSE}
+# Cargamos las librerias y datos necesarios
+library(tidyr)
+library(dplyr)
+library(ggpubr)
+library(ez)
+library(car)
+
+data <- read.csv2("EI-2025-1-PE1-Datos.csv")
+
+# Seleccionamos solo las columnas que nos sirven, en conjunto a las consolas que nos interesan 
+data_filtered <- data %>%
+  select(Consola,Otro) 
+
+data_filtered <- data_filtered %>%
+  filter(Consola %in% c("GameBoy Advance", "Nintendo Wii", "PlayStation 4", "XBox 360"))
+
+# Agregamos un id para cada consola, para poder realizar la prueba de ANOVA y factor a consola
+data_filtered <- data_filtered %>%
+  mutate(Id = row_number()) %>%
+  mutate(Consola = factor(Consola, levels = c("GameBoy Advance", "Nintendo Wii", "PlayStation 4", "XBox 360")))
+
+data_filtered <- na.omit(data_filtered)
+```
+
+Luego de cargados los datos, nos damos cuenta que la medicion de popularidad segun ventas, se repite varias veces por consola, ya que se midio la popularidad de la consola segun las ventas de determinado videojuego. De esta manera, seguimos con la idea de realizar una prueba ANOVA de una via, pero corresponde su version correlacionada de medidas repetidas.
+
+Para lo anterior, se deben cumplir 4 condiciones:
+1) La variable dependiente esta en escala de intervalos iguales: Como el numero de ventas en millones es un dato continuo, se cumple esta condicion.
+2) Observaciones independientes dentro de los grupos: Como las ventas de un videojuego en una consola, no influyen directamente en las ventas de otro videojuego de otra, se cumple esta condicion.
+3) Se supone razonablemente la normalidad de los datos: Para verificar esta condicion, se realizara una prueba de normalidad de Shapiro-Wilk, en conjunto de un grafico q-q.
+
+```{r}
+# Aplicamos la prueba de Shapiro-Wilk para verificar la normalidad de los datos
+shapiro.test(data_filtered$Otro[data_filtered$Consola == "GameBoy Advance"])
+shapiro.test(data_filtered$Otro[data_filtered$Consola == "Nintendo Wii"])
+shapiro.test(data_filtered$Otro[data_filtered$Consola == "PlayStation 4"])
+shapiro.test(data_filtered$Otro[data_filtered$Consola == "XBox 360"])
+
+# Graficamos el mediante q-q para verificar la normalidad de los datos
+tonos_azules = c ("steelblue","steelblue1","steelblue2","steelblue3")
+g <- ggqqplot (data_filtered, x = "Otro", y = "Consola",color = "Consola" , palette = tonos_azules)
+g <- g + facet_wrap(~ Consola )
+g <- g + rremove ("x.ticks") + rremove ("x.text")
+g <- g + rremove ("y.ticks") + rremove ("y.text")
+g <- g + rremove ("axis.title")
+print ( g )
+```
+
+Como todos lo p-valor de la prueba de Shapiro-Wilk son mayores a 0.05 y los graficos q-q no presentan grandes desviaciones en los datos, podemos suponer razonablemente la normalidad de los datos.
+
+4) La matriz de varianzas-covarianzas es esferica: Esto lo verificamos mediante la prueba de Mauchly, propia de la funcion ezANOVA(), que en caso de no cumplirse, se puede aplicar una correcion segun corresponda.
+
+Acabamos de verificar todas las condiciones para la prueba, por lo que procedemos a realizarla:
+```{r}
+# Realizamos la prueba de ANOVA mediante la funcion ezANOVA() con un 95% de confianza
+anova_result <- aov(Otro ~ Consola, data = data_filtered)
+
+# Extraemos el p-valor de aov
+anova_p_value <- summary(anova_result)[[1]][["Pr(>F)"]][1]
+```
+
+Como vemos el p valor de la prueba de Mauchly es mayor que el nivel de significancia 0.05, por lo que se cumple la condicion de esfericidad. Por lo que podemos aplicar la prueba de ANOVA sin correccion. Y como podemos ver en el resultado el p-valor es menor que 0.05, por lo que se rechaza la hipotesis nula, y por lo tanto, se concluye que las medias de popularidad de cada consola, en regiones fuera de Norteamerica,Europa y Japon, presentan diferencias significativas en al menos 1 par de comparacion.
+
+Para esto aplicaremos un posthoc de t:
+```{r}
+# Posthoc
+pairwise.t.test(data_filtered$Otro, data_filtered$Consola, p.adjust.method = "BH")
+```
+Vemos que el p valor entre xbox 360 es menor a 0.05 en todas las consolas, por lo que se concluye que la xbox 360 es la consola que presenta diferencias significativas en su popularidad respecto a las otras consolas. Por lo que se concluye que la xbox 360 es la consola mas popular en regiones fuera de Norteamerica,Europa y Japon.
+
+2) Verificar que la consola Sega Dreamcast alcanzo la misma popularidad en Japon y en el resto del mundo EXCLUYENDO A Norte America y Europa.
+
+Respuesta:
+
+Nos piden analizar la muestra dada y verificar si la consola Sega Dreamcast tuvo la misma popularidad en Japon y en el resto del mundo, excluyendo a Norte America y Europa. Para esto, Verificaremos condiciones de normalidad y analizaremos los datos para ver que tipo de prueba se utilizara.
+
+```{r warning=FALSE, message=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+library(ggplot2)
+data=read.csv2("EI-2025-1-PE1-Datos.csv")
+data_filtered=data %>% select(Consola, Japon, Otro) 
+data_filtered=data_filtered %>% filter(Consola=="Sega Dreamcast")
+# Convertimos los datos a formato largo segun Region
+data_long <- data_filtered %>%
+  pivot_longer(cols = -Consola, names_to = "Region", values_to = "Ventas") %>%
+  mutate(Region = factor(Region, levels = c("Japon", "Otro")))
+
+#verificacion de normalidad para determinar que prueba estadistica utilizar
+shapiroJapon=shapiro.test(data_filtered$Japon)
+shapiroOtro=shapiro.test(data_filtered$Otro)
+
+#al ser normales y quiero comparar 2 medias de una muestra pareada debo utilizar t student
+
+alpha=0.05
+t=t.test(data_filtered$Japon, data_filtered$Otro, paired = TRUE, alternative = "two.sided", conf.level = 1-alpha)
+```
+
+Primero Lo mas importante es definir la Hipotesis nula que se buscara contrastar con el analisis y el nivel de significancia que consideraremos.
+
+Hipotesis:
+
+H0: La media de las ventas en Japon es igual a la media de las ventas en el resto del mundo (excluyendo Norte America y Europa).
+
+H1: La media de las ventas en Japon es diferente a la media de las ventas en el resto del mundo (excluyendo Norte America y Europa).
+
+Nivel de significancia:
+alpha=0.05
+
+Una vez propuesta la hipotesis y determinado el nivel de significancia. se determinara si los datos siguen una distribucion normal y que tipo de muestra es.
+
+```{r}
+head(data_filtered)
+```
+
+Como se puede ver nos indican que se necesita trabajar con una muestra pareada con dos niveles por instancia, es pareada ya que se evalua el mismo sujeto en dos regiones distintas.
+
+una vez identificada el tipo de muestra analizaremos la normalidad para trabajar los datos correctamente y realizar una prueba acorde a la distribucion de los datos.
+
+```{r}
+# Verificamos normalidad 
+tonos_azules = c ("steelblue","steelblue1")
+g <- ggqqplot (data_long, x = "Ventas", y = "Region",color = "Region" , palette = tonos_azules)
+g <- g + facet_wrap(~ Region )
+g <- g + rremove ("x.ticks") + rremove ("x.text")
+g <- g + rremove ("y.ticks") + rremove ("y.text")
+g <- g + rremove ("axis.title")
+print ( g )
+
+shapiroJapon
+shapiroOtro
+```
+
+Como podemos evindenciar los datos siguen una distribucion normal, por lo que podemos aplicar la prueba t de student para muestras pareadas.
+
+Para ello buscaremos verificar si se cumplen las condiciones para realizar la prueba t de student, las cuales son:
+
+1. Los pares de observaciones son independientes: Si ya que evalua a un sujeto sin necesitar el resultado de otro
+
+2. Los valores provienen de una muestra normal: Si evidenciado en el procedimiento anteriormente realizado
+
+3. Los valores son continuos: si ya que las ventas son valores continuos
+
+Una vez verificadas las condiciones procedemos a realizar la aplicacion de la prueba:
+
+```{r}
+t
+```
+
+Analizando el resultado de la prueba realizada obtenemos que se obtuvo un valor p=2.2e-16, lo cual es menor al nivel de significancia 0.05, por lo que se rechaza la hipotesis nula en favor de la hipotesis alternativa, es decir, la media de las ventas en Japon es diferente a la media de las ventas en el resto del mundo (excluyendo Norte America y Europa).
+

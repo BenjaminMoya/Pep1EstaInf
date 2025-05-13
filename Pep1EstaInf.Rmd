@@ -1,0 +1,705 @@
+---
+title: "Resumen Pep 1"
+author: "Benjamin  Moya"
+date: "2025-04-22"
+output: html_document
+---
+```{r message=FALSE,warning=FALSE}
+library(tidyr)
+library(dplyr)
+library(ggpubr)
+library(ez)
+```
+
+##Lectura 1
+
+1) Averigua qué es un gráfico de puntos. ¿Cuándo es apropiado utilizar este tipo de gráfico para revisardatos? ¿En qué se diferencia de un gráfico de tiras?
+R: Un garfico de puntos es una representación gráfica de datos en la que cada punto representa un valor específico. Es apropiado utilizarlo cuando se desea mostrar la distribución de un conjunto de datos y observar patrones o tendencias. Se diferencia de un gráfico de tiras en que el gráfico de tiras utiliza barras para representar cantidades, mientras que el gráfico de puntos utiliza puntos individuales.
+
+2) Da un ejemplo de una variable en que la mediana la caracteriza mejor que la media
+R: Un ejemplo de una variable en la que la mediana caracteriza mejor que la media es el ingreso familiar. Si hay un pequeño número de familias con ingresos extremadamente altos, la media puede ser engañosa y no representar adecuadamente el ingreso típico de la mayoría de las familias. En este caso, la mediana sería una mejor medida de tendencia central.
+
+3) Da un ejemplo de 3 variables que posiblemente tengan una distribucion simetrica, con asimetria positiva y con asimetria negativa, respectivamente, justificando bien cada caso
+R: Una distribucion simetrica se ve marcada por no presentar una relacion clara entre variables, una asimetrica presenta una relacion inversa entre las variables contrastadas. Velocidad vs Frecuencia cardiaca(Simetrica), Velocidad vs Gasolina, Velocidad vs tiempo de reacción (Asimetricas)
+
+4) Describe un estudio en que posiblemente los datos recoletados tengan una distribucion bimodal
+R: Una distribucion bimodal es aquella que presenta dos modas bien marcadas en la distribucion de los datos. Un ejemplo muy claro es la distribucion de la estatura de los hombres y mujeres en una poblacion. En este caso, la distribucion de la estatura de los hombres y mujeres puede presentar dos picos, uno para cada sexo, lo que indica que hay dos grupos distintos en la poblacion.
+
+5) ¿Cual es la informacion mas importante que nos podria dar un grafico de dispersion?
+R: La relacion entre dos variables. Un grafico de dispersion nos permite observar si hay una correlacion entre las variables, si son independientes o si hay una tendencia lineal o no lineal en los datos.
+
+6) ¿Por que es importante conocer una medida de dispersion (variabilidad) de un conjunto de datos? Da un ejemplo novedoso para clarificar tu respuesta
+R: Es importante conocer una medida de dispersion porque nos permite entender la variabilidad de los datos y cómo se distribuyen en torno a la media. Por ejemplo, si estamos analizando el rendimiento académico de un grupo de estudiantes, conocer la desviación estándar nos ayudará a entender si todos los estudiantes tienen un rendimiento similar o si hay una gran variabilidad en sus calificaciones. Esto puede ser útil para identificar a los estudiantes que necesitan más apoyo o aquellos que están sobresaliendo.
+
+7) ¿Como obtener los cuartiles para los pesos de los pollitos reportados en la columna weigth? ¿Y como obtenerlos por cada tipo de alimento de la columna feed?
+
+```{r}
+# Cargamos los datos
+data(chickwts)
+chickwts <- chickwts %>%
+  mutate(feed = as.factor(feed)) # Convertimos la columna feed a factor
+
+# Obtenemos los cuartiles para los pesos de los pollitos
+cuartiles_pesos <- quantile(chickwts$weight, probs = c(0.25, 0.5, 0.75))
+
+# Obtenemos los cuartiles por cada tipo de alimento
+cuartiles_alimento <- chickwts %>%
+  group_by(feed) %>%
+  summarise(cuartil_1 = quantile(weight, 0.25),
+            cuartil_2 = quantile(weight, 0.5),
+            cuartil_3 = quantile(weight, 0.75))
+```
+
+10) ¿Como se obtiene un grafico de cajas para comparar los pesos de los pollitos por tipo de alimento suministrado?
+```{r}
+# Realizamos el grafico de caja
+g <- ggboxplot( chickwts , x = "feed" , y = "weight" ,
+                 palette = c ( "steelblue" , "steelblue1" , "slategray4", "slategray3" , "slategray2" , "slategray1") ,
+                 fill = "feed" ,
+                 title = "Peso por dieta" ,
+                 xlab = "feed" ,
+                 ylab = "weigh" )
+g <- ggpar(g , legend = "none" )
+print( g )
+```
+11) ¿Como obtener un histograma de los pesos de los pollitos? ¿Como obtenerlos separados y con los colores distintos por cada tipo de alimento?
+```{r}
+# Realizamos el histograma separandolos por tipo de alimento
+g1 <- gghistogram(chickwts,
+                  x = "weight",             # la variable cuantitativa
+                  bins = 10,                
+                  add = "mean",             # añade línea de la media
+                  xlab = "Peso [grams]",
+                  ylab = "Frecuencia",
+                  color = "feed",           # color de borde por tipo de alimento
+                  fill = "feed",            # color de relleno por tipo de alimento
+                  facet.by = "feed",        # un histograma por tipo de alimento
+                  palette = "npg")          # paleta de colores opcional
+
+print(g1)
+```
+12) ¿Como obtener un grafico de densidad de los pesos de los pollitos? ¿ Como obtenerlos separados en diferentes paneles por tipo de alimento?
+```{r}
+# Realizamos el grafico de densidad
+g2 <- ggdensity(chickwts,
+                x = "weight",             # la variable cuantitativa
+                add = "mean",             # añade línea de la media
+                rug = TRUE,               # añade líneas de la densidad
+                xlab = "Peso [grams]",
+                ylab = "Densidad",
+                color = "feed",           # color de borde por tipo de alimento
+                fill = "feed",            # color de relleno por tipo de alimento
+                facet.by = "feed",        # un histograma por tipo de alimento
+                palette = "npg")          # paleta de colores opcional
+print(g2)
+```
+
+##Lectura 2
+
+1) Da un ejemplo de una pregunta de investigacion sobre las asiganturas comunes en ingenieria que pueda modelarase con una variable aleatoria binomial ¿Cual seria el valor esperado? ¿Cual seria la varianza? ¿Como te imaginas su funcion de masa de probabilidad?
+
+R: ¿Cuantos estudiantes, luego de la transicion remota a presencial, aprueban la asignatura de calculo?. El valor esperado seria el promedio de estudiantes que aprueban la asignatura, y la varianza seria la medida de dispersion de los estudiantes que aprobaron. La funcion de masa de probabilidad se veria como una campana, donde la mayoria de los estudiantes se agrupan en torno al promedio.
+
+2) Da un ejemplo de una pregunta de investigacion sobre los conciertos realizados en Santiago que pueda modelarse con una variable categorica aleatoria geometrica ¿Cual seria el valor esperado? ¿Cual seria la varianza? ¿ Como te imaginas su funcion de masa de probabilidad?
+
+R: ¿Cuantos conciertos se realizan en Santiago en un mes? El valor esperado seria el promedio de conciertos realizados en un mes, y la varianza seria la medida de dispersion de los conciertos realizados. La funcion de masa de probabilidad se veria como una campana, donde la mayoria de los conciertos se agrupan en torno al promedio.
+
+3) Da un ejemplo de una pregunta de investigacion sobre el estado de la salud mental de estudiantes universitarios que pueda modelarse con una variable aleatoria binomial negativa ¿Cual seria el valor esperado? ¿Cual seria la varianza? ¿ Como te imaginas su funcion de masa de probabilidad?
+
+R: ¿Cuantos estudiantes universitarios presentan problemas de salud mental? El valor esperado seria el promedio de estudiantes que presentan problemas de salud mental, y la varianza seria la medida de dispersion de los estudiantes que presentan problemas de salud mental. La funcion de masa de probabilidad se veria como una campana, donde la mayoria de los estudiantes se agrupan en torno al promedio.
+
+4) Segun el reporte Mensual de Empleo, las siguientes son las estadisticas(media ± desviacion estandar) para las seis variables relevantes que se han estudiado en los ultimos cinco años: Numero de personas despedidad = 64675 ± 8321 ,Numero de personas renunciadas = 118543 ± 17936, Numero de personas jubiladas = 97092 ± 11147, Numero de empleos creados = 24715 ± 10832, Numero de personas contratadas = 301345 ± 27261 y Numero de personas entrando a la fuerza de trabajo = 26444 ± 29440. Con esta informacion, calcula la media y la desviacion estandar de: caida neta de empleo, subida neta de empleo, caida neta del desempleo y vacancia del empleo.
+
+```{r}
+# Calculamos cada una de las medidas segun lo indicado por la formula
+caida_neta_empleo <- 24715 - 64675 - 118543 - 97092
+subida_neta_empleo <- 301345 - 64675 - 118543 - 97092
+caida_neta_desempleo <- 64675 + 118543 + 301345 + 26444
+vacancia_empleo <- 24715 - 26444
+```
+
+5) La probabilidad de que un estudiante universitario chileno seleccionado al azar sea VIH positivo es 0,0013 ¿ Cuales serian la media y la desviacion estandar de esta variable?
+
+```{r}
+# La media de una variable binomial es n*p y la desviacion estandar es sqrt(n*p*(1-p)), por lo que si n es 1000
+
+n <- 1000
+p <- 0.0013
+media <- n * p
+desviacion_estandar <- sqrt(n * p * (1 - p))
+media
+desviacion_estandar
+```
+
+6) Considerando la informacion anterior, en promedio ¿ a cuantos estudiantes universitarios se deberia revisar hasta encontrar a un VIH positivo?
+
+```{r}
+# Segun formula esto es 1-p/p
+p <- 0.0013
+n_intentos <- (1-p)/p
+n_intentos
+```
+
+7) Si la Universida del ejericio anterior dispone de 10 paquetes de tratamiento de VIH para estudiantes, ¿ Como podria saber a cuantos estudiantes deberia examinar para poder asignarlos(suponiendo que todo estudiante VIH psoitivo acepta el tratamiento)?
+
+```{r}
+# Segun formula esto es r/p
+p <- 0.0013
+r <- 10
+n_intentos <- r/p
+n_intentos
+```
+
+8) Da un ejemplo de una pregunta de investigacion sobre la asignaturas comunes en ingenieria que pueda modelarse con una distribuacion normal. Indica y justifica los parametros para tal distribucion.
+
+R: ¿Cual es la distribucion de las calificaciones de los estudiantes en la asignatura de calculo? La media seria el promedio de las calificaciones y la desviacion estandar seria la medida de dispersion de las calificaciones. La distribucion se veria como una campana, donde la mayoria de los estudiantes se agrupan en torno al promedio.
+
+9) Da un ejemplo de una pregunta de investigacion sobre el estado de la salud mental de estudiantes universitarios que pueda modelarse con una distribucion normal. Indica y justifica los parametros para tal distribucion.
+
+R: ¿Cual es la distribucion de los niveles de ansiedad de los estudiantes universitarios? La media seria el promedio de los niveles de ansiedad y la desviacion estandar seria la medida de dispersion de los niveles de ansiedad. La distribucion se veria como una campana, donde la mayoria de los estudiantes se agrupan en torno al promedio.
+
+10) ¿ Es correcto afirmar que, que si lanza un dado una y otra vez, la media movil simple del numero de puntos que aparecen en la cara superior crece monotonamente? Justifica tu respuesta.
+
+R: No, no es correcto. La media movil simple no necesariamente crece monotonamente, ya que depende de los resultados de cada lanzamiento. Si se obtienen resultados bajos en los lanzamientos, la media movil puede disminuir, y viceversa. La media movil simple es una medida de tendencia central que suaviza las fluctuaciones en los datos, pero no garantiza un crecimiento monotono.
+
+11) ¿ Es correcto afiermar que, si se lanza un dado una y otra vez, la proporcion de veces que aparece un numero impar de puntos(1,3 o 5) en la cara superior es siempre 0.5? Justifica tu respuesta.
+
+R: No, no es correcto. La proporcion de veces que aparece un numero impar de puntos en la cara superior no es siempre 0.5, ya que depende de los resultados de cada lanzamiento. Si se obtienen resultados bajos en los lanzamientos, la proporcion puede disminuir, y viceversa. La proporcion es una medida de tendencia central que suaviza las fluctuaciones en los datos, pero no garantiza un valor constante.
+
+12) Si se calcula la media de diez muestras distintas extraidas de la misma poblacion ¿ se espera ver el mismo valor cada vez? ¿ Como se llama este fenomeno?
+
+R: No, no se espera ver el mismo valor cada vez. Este fenomeno se llama variabilidad, y se refiere a la variacion en los valores de la media de diferentes muestras extraidas de la misma poblacion. La variabilidad es una medida de la dispersion de los datos y puede ser influenciada por el tamaño de la muestra y la variabilidad de la poblacion.
+
+13) Se sabe que una prueba para medir el coeficiente intelectual de jovenes de 18 años produce puntuaciones que siguen una distribucion N(100, 100). Dibuja el histograma de la distribucion muestral de medias para muestras de tamaño 25 de esta poblacion. Una de las muestras anteriores presento media muestral 95 y desviacion estandar 15, determina el intervalo con 95% de confianza para este caso. Con otra de las muestras se pudo determinar que su intervalo con 99% confianza era [90.26;105.74], ¿ Que significa esto?. El intervalo anterior ¿es mas grande o mas pequeño que uno con 90% de confianza?
+  a)
+```{r}
+library(ggpubr)
+
+# Establecemos una semilla
+set.seed (94)
+
+# Generar aleatoriamente una poblacion 
+
+poblacion <- rnorm ( n = 1000 , mean = 100 , sd = 100)
+
+# Calculamos la media de la poblacion
+media_poblacion <- mean ( poblacion )
+cat ( " Media de la población : " , media_poblacion , " \n " )
+
+# Tomar 1000 muestras de tamaño 100
+tamano_muestra <- 25
+repeticiones <- 1000
+muestras <- replicate ( repeticiones ,
+                        sample ( poblacion , tamano_muestra ) )
+
+# Calcular medias muestrales y almacenar los resultados 
+medias <- colMeans ( muestras )
+medias <- as.data.frame ( medias )
+
+# Construir un histograma de las medias muestrales
+g <- gghistogram ( data = medias , x = "medias" ,
+                   bins = 20 , fill = " steelblue " , alpha = 0.2 ,
+                   title = " Distribución de la media muestral " ,
+                   xlab = " Media " , ylab = " Frecuencia ")
+
+# Agregar línea vertical con la media de la población
+
+g <- g + geom_vline ( aes ( xintercept = media_poblacion ) ,
+                        color = " darkgoldenrod1 " , linetype = 2 ,
+                        linewidth = 1)
+print ( g )
+```
+  b)
+```{r}
+
+# Calculamos SE y z segun alpha 0.05
+
+SE <- 15/sqrt(25)
+z <- qnorm (0.95)
+
+# Con z construimos el intervalo de confianza
+limite_inferior <- 95 - z * SE
+limite_superior <- 95 + z * SE
+cat ( " Intervalo de confianza : [ " , limite_inferior , " ; " , limite_superior , " ] \n " )
+```
+  c)
+```{r}
+
+# Si solo tenemos el IC del 99%, el unico valor que podemos obtener es z
+
+z <- qnorm (0.99)
+z
+```
+  d)
+  
+14) Una empresa de tecnologia quiere promocionar un software especializado para almacenar y recuperar imagenes medicas digitales. Con esta idea, esta financiando un estudio para determinar el tiempo(en segundos) que necesita un grupo de medicos para recuperar imagenes desde sus propios registros en sus portatiles personales y desde la base de datos central con el software ofrecido y una conexion a la Web. Enuncia las hipotesis nula y alternativa. Identifica la variable aleatoria que se va a estudiar, el parametro de interes y el correspondiente estadistico. Enuncia, mas formalmente, las hipotesis nula y alternativa para este caso.
+
+R: Hipotesis nula: No hay diferencia en el tiempo que necesitan los medicos para recuperar imagenes desde sus propios registros y desde la base de datos central con el software ofrecido. 
+Hipotesis alternativa: Hay una diferencia en el tiempo que necesitan los medicos para recuperar imagenes desde sus propios registros y desde la base de datos central con el software ofrecido.
+La variable aleatoria a estudiar es el tiempo en segundos, el parametro de interes es la media del tiempo de recuperacion y el estadisticos corresponde a la diferencia de medias entre grupos.
+
+Formalmente la hipotesis nula y alternativa se enuncian como:
+H0: μ1 = μ2 = μ3
+H1: μ1 ≠ μ2 ≠ μ3
+
+15) Considerando el enunciado de la pregunta anterior, Supon que el intervalo con 95% de confianza para el tiempo de recuperacion promedio de una imagen digital desde la base de datos central resulto ser [24;36] s. ¿Que desicion tomarias antes la hipotesis nula: la media del tiempo de recupracion de una imagen digital con el nuevo software es de 25 segundos? En este caso, ¿Cual podria sera la hipotesis alternativa?. Para el intervalo de confianza anterior ¿Cual seria un error del tipo I? Conociendo el intervalo de confianza anterior ¿es posible comerter un error de tipo II?
+
+R: No hay evidencia suficiente para rechazar la hipotesis nula, por lo que se acepta. La hipotesis alternativa seria: La media del tiempo de recuperacion de una imagen digital con el nuevo software es distinta de 25 segundos. Un error de tipo I seria rechazar la hipotesis nula cuando es verdadera, lo que significaria concluir que el tiempo de recuperacion es distinto de 25 segundos cuando en realidad no lo es. Conociendo el intervalo de confianza anterior, no es posible cometer un error de tipo II, ya que el intervalo incluye el valor de 25 segundos.
+
+16)Si una hipotesis nula es falsa, aumental el nivel de significacion para un tamaño de muestra dado, ¿Reduce la probabilidad de rechazarla?
+
+R: No, aumentar el nivel de significacion no reduce la probabilidad de rechazar la hipotesis nula. De hecho, al aumentar el nivel de significacion, se aumenta la probabilidad de rechazar la hipotesis nula, lo que puede llevar a cometer un error de tipo I.
+
+17) ¿Que significa que un estadistico tenga un valor p de 0.025?
+
+R: Un valor p de 0.025 significa que hay una probabilidad del 2.5% de observar un estadistico tan extremo como el observado, dado que la hipotesis nula es verdadera.
+
+18) Si una hipotesis nula es rechazada de significacion 0.01 ¿sera rechazada a un nivel de significacion 0.05? Explica
+
+R: Si, sera rechazada, ya que un nivel de significacion de 0.01 es mas estricto que un nivel de significacion de 0.05. Si la hipotesis nula es rechazada a un nivel de significacion de 0.01, entonces tambien sera rechazada a un nivel de significacion de 0.05.
+
+19) Si una hipotesis nula es rechazada por una prueba unilateral, ¿sera tambien rechazada por una prueba bilateral? Explica
+
+R: Si, sera rechazada, ya que una prueba unilateral es menos estricta que una prueba bilateral. Si la hipotesis nula es rechazada por una prueba unilateral, entonces tambien sera rechazada por una prueba bilateral.
+
+20) Explica por que se incrementa la probabilidad de cometer errores de tipo I al cambiar de una prueba de hipotesis bilateral a otra unilateral.
+
+R: Al cambiar de una prueba de hipotesis bilateral a una unilateral, se incrementa la probabilidad de cometer errores de tipo I porque se reduce el umbral de rechazo para la hipotesis nula. En una prueba unilateral, solo se considera un lado de la distribucion, lo que aumenta la probabilidad de rechazar la hipotesis nula cuando es verdadera.
+
+21) Acabas de leer un articulo que hace la siguiente aseveracion: "a 95% confidence interval for mean reaction time is from 0.25 to 0.29 seconds. Thus, about 95% of individuals will have reaction times in this interval" Comenta su validez.
+
+R: La aseveracion no es valida, ya que un intervalo de confianza del 95% para la media de un tiempo de reaccion no implica que el 95% de los individuos tendran tiempos de reaccion dentro de ese intervalo. El intervalo de confianza se refiere a la estimacion de la media poblacional, no a la distribucion individual de los tiempos de reaccion.
+
+22) Si para un estudio de una determinada variable aleatoria categorica es igualmente dañino cometer errores del tipo I como errores del tipo II con hipotesis sobre la probabilidad de un evento. Dibuja la distribucion de una muestra para la que el contraste de hipotesis con nivel de significacion 0.05 sea confiable. Dibuja la distribucion de una muestra en que se requiera de un nivel de significacion mas exigente 0.05 para hacer el contraste de hipotesis mas confiable. Dibuja la distribucion de una muestra en que es mejor no confiar en el contraste de hipotesis con metodos estudiados hasta ahora.
+  a)
+```{r}
+
+# Generar una muestra donde la media cumpla con la hip ó tesis nula
+set.seed (208)
+media_poblacion_antiguo <- 530
+media_muestra_nuevo <- 527.9
+desv_est <- 48
+n <- 1600
+error_est <- desv_est / sqrt ( n )
+
+x <- seq ( media_poblacion_antiguo - 5.2 * error_est ,
+           media_poblacion_antiguo + 5.2 * error_est ,
+           0.01)
+y <- dnorm (x , mean = media_poblacion_antiguo , sd = error_est )
+muestra <- data.frame (x , y )
+# Graficar la muestra
+g <- ggplot ( data = muestra , aes ( x ) )
+g <- g + stat_function ( fun = dnorm ,
+                           args = list ( mean = media_poblacion_antiguo , sd = error_est ) ,
+                           colour = " steelblue " , size = 1)
+g <- g + ylab ( " " )
+g <- g + scale_y_continuous ( breaks = NULL )
+g <- g + scale_x_continuous ( name = " Tiempo de procesamiento [ ms ] " )
+g <- g + theme_pubr ()
+
+# Colorear el á rea igual o menor que la media observada
+g <- g + geom_area ( data = subset ( muestra , x < media_muestra_nuevo ) ,
+                       aes ( y = y ) , colour = " steelblue " , fill = " steelblue " ,
+                       alpha = 0.5)
+
+# Calcular el á rea bajo la cola inferior
+area_inferior <- pnorm ( media_muestra_nuevo ,
+                           mean = media_poblacion_antiguo ,
+                           sd = desv_est )
+
+# Colorear igual á rea en la cola restante
+
+corte_x <- qnorm (1 - area_inferior ,
+                    mean = media_poblacion_antiguo ,
+                    sd = desv_est )
+g <- g + geom_area ( data = subset ( muestra , x > corte_x ) ,
+                       aes ( y = y ) , colour = " steelblue " , fill = " steelblue " ,
+                       alpha = 0.5)
+
+# Agregar una l í nea vertical para el valor nulo
+
+g <- g + geom_vline ( aes ( xintercept = media_poblacion_antiguo ) ,
+                        color = " skyblue1 " , linetype = 1)
+
+print ( g )
+
+# Calcular el valor Z para la muestra
+
+Z <- ( media_muestra_nuevo - media_poblacion_antiguo ) / error_est
+
+# Calcular y mostrar el valor p ( recordando ahora que la hip ó tesis es bilateral )
+
+p <- 2 * pnorm (Z , lower.tail = TRUE )
+cat ( " Valor p : " , p )
+```
+
+## Lectura 3
+
+23) Da un ejemplo de un apregunta de investigacion sobre las asignaturas comunes en ingenieria que requiera utilizar una prueba t de student para una muestra. Explica bien que variable se mide y enuncia las hipotesis a docimar, justificando el valor nulo escogido y el tipo de hipotesis alternativa.
+
+R: La media de calificaciones de los alumnos es mayor a 35 en la asignatura de calculo. La variable a medir es la calificacion de los estudiantes en la asignatura de calculo. La hipotesis nula seria que la media de las calificaciones es igual a 35, y la hipotesis alternativa seria que la media de las calificaciones es distinta de 35(bilateral).
+
+24) Considera el siguiente enunciado: Para confirmar que el tiempo que requieren los estudiantes de ingenieria para desarrollar una guia de ejericios de Calculo I es de 2 horas, se eligio aleatoriamente a 16 estudiantes de esta asignatura y se les pidio anotar el tiempo [min] invertido en la tarea. Los resultados fueron los siguientes: 140.6, 133.3, 142.4, 86.4, 129.9, 110.8, 133.2, 129.1, 142.5, 150.2, 141.6, 111.0, 127.2, 137.9, 131.9, 121.9 . EnunCia las hipotesis nula y alternativa a contrastar. Analiza si es razonable en este caso considerar que los datos cumplen las condiciones para usar una prueba t de student. Independientemente del utlimo resultado, aplica la prueba propuesta y obten un intervalo de confianza y un valor p. Usando un nivel de significacion adecuado, entrega una conclusion para la cuestion planteada.
+
+R:
+Ho: La media del tiempo que requieren los estudiantes para realizar la guia es igual a 120 minutos.
+Ha: La media del tiempo que requieren los estudiantes para realizar la guia es mayor de 120 minutos.
+
+Para este caso, a primera vista los datos parecen cumplir con las condiciones para usar una prueba t de student, ya que la muestra es aleatoria y la variable es continua. Sin embargo, es importante verificar la normalidad de los datos antes de aplicar la prueba.
+```{r}
+
+muestra <- c(140.6, 133.3, 142.4, 86.4, 129.9, 110.8, 133.2, 129.1,
+                142.5, 150.2, 141.6, 111.0, 127.2, 137.9, 131.9, 121.9)
+
+ # Crear gr á fico Q - Q para verificar la distribuci ó n de la muestra
+
+g <- ggqqplot ( data = data.frame ( muestra ) , x = "muestra" ,
+                color = "steelblue" , xlab = "Te ó rico" , ylab = "Muestra" ,
+                title = "Gr á fico Q - Q muestra v / s distribuci ó n normal" )
+print ( g )
+
+```
+
+Como vemos posee unos valores atipicos, pero de igual manera podemos confirmar razonablemente su normalidad, aunque seremos estrictos con un alfa 0,01.
+
+```{r}
+
+alfa <- 0.01
+
+# Calculamos estadisticos
+
+media <- mean(muestra)
+desviacion <- sd(muestra)
+
+prueba_t <- t.test(muestra, mu = 120, alternative = "two.sided", conf.level = 1 - alfa)
+print(prueba_t)
+```
+Como el p valor es mayor al nivel de significancia de la prueba, no hay suficiente evidencia para rechazar la hipotesis nula. Por lo tanto, no se puede concluir que el tiempo que requieren los estudiantes para desarrollar la guia de ejercicios de Calculo I sea diferente a 120 minutos.
+ 
+25) Considera el siguiente enunciado:Una fábrica de detectores de radón recibió consultas de sus clientes sobre si era conveniente comprar su nuevo modelo de detectores Radolmes+®para reemplazar los antiguos aparatos Ra-dolmes®en su poder. Si bien los técnicos están seguros que la inversión es conveniente, la gerencia decidió hacer un estudio previo a la recomendación. Para esto, se introdujeron en una tómbola oscura los números de serie de los aparatos producidos en los últimos meses de ambos modelos y se seleccionaron 26 números sin mirar y girando la tómbola cinco veces entre cada selección, resultan-do escogidos 12 aparatos Radolmes y 14 aparatos Radolmes+. Luego, cada detector seleccionadose expuso a 100 pCi/l de radón. Las lecturas resultantes fueron las siguientes:
+
+Radolmes: 105,6; 100,1; 90,9; 105,0; 91,2; 99,6; 96,9; 107,7; 96,5; 103,3; 91,3; 92,4.
+Radolmes+: 98,9; 94,3; 95,9; 107,7; 102,0; 94,2; 100,6; 98,5; 99,1; 101,3; 94,4; 103,6; 95,3;106,7.
+
+y responde las siguientes preguntas:5.9 ¿Qué hipótesis nula y alternativa se deberían docimar con una prueba t de Student para respondera la inquietud planteada? ¿Cumplen los datos obtenidos las condiciones para usar esta prueba t deStudent?5.10 Aplicando la prueba t de Student para este caso, obtén un intervalo de confianza y un valor p. ¿Qué aconsejarías a los directivos de la fábrica?
+
+R:
+H0: La media de la diferencia entre la lectura y la exposicion es la misma para ambos modelos.
+Ha: La media de la diferencia entre la lectura y la exposicion es menor para el modelo Radolmes+.
+
+```{r}
+library(tidyr)
+# Verificacion de normalidad
+
+radolmes <- c(105.6, 100.1, 90.9, 105.0, 91.2, 99.6, 96.9, 107.7, 96.5, 103.3, 91.3, 92.4)
+radolmes_plus <- c(98.9, 94.3, 95.9, 107.7, 102.0, 94.2, 100.6, 98.5, 99.1, 101.3, 94.4, 103.6, 95.3,106.7)
+muestra_modelos <- as.data.frame(cbind(radolmes, radolmes_plus))
+
+# Convertimos los datos a un formato largo
+muestra_larga <- pivot_longer(muestra_modelos,
+                              cols = everything(),
+                              names_to = "modelo",
+                              values_to = "valor")
+
+tonos_azules = c ("steelblue","steelblue1")
+g <- ggqqplot (muestra_larga, x = "valor", y = "modelo",color = "modelo" , palette = tonos_azules)
+g <- g + facet_wrap(~ modelo )
+g <- g + rremove ("x.ticks") + rremove ("x.text")
+g <- g + rremove ("y.ticks") + rremove ("y.text")
+g <- g + rremove ("axis.title")
+print ( g )
+```
+
+Como vemos la normalidad en las dos muestras se cumple.
+
+```{r}
+# Calculamos las diferencias con 0
+
+diferencias <- abs(c(105.6, 100.1, 90.9, 105.0, 91.2, 99.6, 96.9, 107.7, 96.5, 103.3, 91.3, 92.4) - 100)
+diferencias_plus <- abs(c(98.9, 94.3, 95.9, 107.7, 102.0, 94.2, 100.6, 98.5, 99.1, 101.3, 94.4, 103.6, 95.3,106.7) - 100)
+
+# Calculamos estadisticos
+prueba_t <- t.test(diferencias, diferencias_plus, mu = 0, alternative = "less", conf.level = 0.95)
+print(prueba_t)
+```
+
+Como vemos el p valor de la prueba es mayor al nivel de significancia, por lo que rechazamos la hipotesis nula en favor de la alternativa, lo que sugiere que el nuevo modelo de detector Radolmes+ es mejor que el modelo Radolmes. Por lo tanto, aconsejaria a los directivos de la fabrica que consideren la compra del nuevo modelo.
+
+26) El patrón de un gran fundo de nogales está preocupado porque se ha detectado la presencia de una plagaen varios árboles. Si bien existe un pesticida para el parásito, este es bastante caro y su aplicación solose justifica económicamente si más del 20 % de los árboles está infectado. En consecuencia, el patrónha decidido estimar la extensión de la infestación revisando una muestra aleatoria de 200 nogales (unaporción bastante pequeña de los más de 20.000 árboles en el fundo). En base a lo anterior, determina:(a) ¿Cuál es la variable dicotómica (experimento Bernulli) en este caso?(b) ¿Qué distribución sigue la variable en estudio? ¿Con qué parámetro(s) de interés?(c) ¿Qué estimador existe(n) para este(os) parámetro(s)?(d) ¿Qué hipótesis respondería las dudas del patrón del fundo?
+
+R: La variable son los arboles, los cuales pueden estar infectados o no. La distribucion es binomial, con n=200 y p=0.2. El estimador es la media muestral, y la hipotesis nula seria que la proporcion de arboles infectados es menor o igual a 0.2, y la hipotesis alternativa seria que la proporcion de arboles infectados es mayor a 0.2.
+
+27)Un estudio sobre en el tiempo que necesitan los estudiantes para resolver una guía de ejercicios de Cálculo I, comparó un grupo de estudiantes que cursaban la asignatura por primera vez con un grupo que la cursaba en segunda ocasión. Sabiendo que este tiempo se distribuye normalmente en ambos casos, con varianza similar, dibuja cómo se verían los datos si el efecto de repetir la asignatura sobre el tiempo requerido para resolver la guía fuera “grande” y si este efecto fuera “pequeño, pero positivo”.
+
+```{r}
+# Cargar librería para visualización
+library(ggplot2)
+
+# Simulación
+set.seed(123)  
+n <- 50        
+
+# Simular datos
+# Primer intento
+tiempo_1 <- rnorm(n, mean = 60, sd = 10)
+
+# Segundo intento con efecto grande
+tiempo_2_grande <- rnorm(n, mean = 80, sd = 10)
+
+# Segundo intento con efecto pequeño pero positivo
+tiempo_2_pequeno <- rnorm(n, mean = 65, sd = 10)
+
+# Unir datos para graficar (caso efecto grande)
+df_grande <- data.frame(
+  tiempo = c(tiempo_1, tiempo_2_grande),
+  grupo = rep(c("Primera vez", "Segunda vez (efecto grande)"), each = n)
+)
+
+# Unir datos para graficar (caso efecto pequeño)
+df_pequeno <- data.frame(
+  tiempo = c(tiempo_1, tiempo_2_pequeno),
+  grupo = rep(c("Primera vez", "Segunda vez (efecto pequeño)"), each = n)
+)
+
+# Gráfica para efecto grande
+ggplot(df_grande, aes(x = tiempo, fill = grupo)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Efecto Grande: Distribución del Tiempo por Grupo",
+       x = "Tiempo para resolver la guía", y = "Densidad")
+
+# Gráfica para efecto pequeño
+ggplot(df_pequeno, aes(x = tiempo, fill = grupo)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Efecto Pequeño: Distribución del Tiempo por Grupo",
+       x = "Tiempo para resolver la guía", y = "Densidad")
+```
+
+27) Considera el siguiente escenario:Una familia emprendedora está considerando concursar por la concesión de una de las cafeterías del campus. Las bases aseguran que el 95 % de las transacciones de venta están en el rango 1.000-10.000. La familia estima que el negocio es rentable si el valor medio de las transacciones de venta es de 3.000 o mayor, y que el verdadero valor medio debe estar alrededor de los 3.500. Para contrastar las hipótesis de que el valor medio es 3.000 versus que es mayor a 3.000 usando una prueba t con un nivel de significación de 0,05, han “espiado” de manera aleatoria 100 transacciones de venta a lo largo de una semana.y responde las siguientes preguntas:¿Qué potencia tiene la prueba planeada?¿Cuántas transacciones deberían registrar para asegurar un poder de 0.9?
+
+```{r}
+library(pwr)
+library(rstatix)
+
+pwr.t.test(n=100,
+           d = (3500 - 3000) / 1000, 
+           sig.level = 0.05, 
+           alternative = "greater" )
+
+pwr.t.test(n=NULL,
+           d = (3500 - 3000) / 1000, 
+           sig.level = 0.05, 
+           power = 0.9, 
+           alternative = "greater" )
+```
+
+28) Considera el siguiente escenario:La nueva concesión de una de las cafeterías del campus recibió la recomendación de que oriente su decoración para atraer alumnas, porque estas gastan más que los alumnos. Antes de tomar esta decisión, planean observar 30 alumnos y 30 alumnas, elegidos al azar, al minuto de pagar en caja y calcular el monto promedio gastado por cada grupo. Luego van a aplicar una prueba t para la docimar la igualdad o diferencia de estas medias con un nivel de significación de 0,05.y responde las siguientes preguntas:¿Qué potencia tiene la prueba si se quiere detectar un efecto mediano?¿Qué tamaño deben tener dos muestras con el mismo número de observaciones si se apunta a tener 80 % de potencia?¿Cuánto varía este tamaño si la hipótesis alternativa se cambia a que el gasto medio de las alumnas es mayor al de los alumnos?
+
+```{r}
+library(pwr)
+
+pwr.t2n.test(n1=30,n2=30,d=0.5,sig.level=0.05,alternative="two.sided")
+
+pwr.t.test(d=0.5,sig.level=0.05,power=0.8,alternative="two.sided",type="two.sample")
+
+pwr.t.test(d=0.5,sig.level=0.05,power=0.8,alternative="greater",type="two.sample")
+```
+29) Considera el siguiente escenario:Luego de un ensayo clínico exitoso, se ha decidido aumentar la proporción de pacientes que se van con una receta de aspirina cuando son dados de alta tras un infarto de miocardio, que históricamente llega el 80 % de las veces. Un proyecto de mejora de la calidad de enfermería en los departamentos de cardiología de los hospitales de la zona occidente ha intentado aumentar esta tasa al 95 %. El servicio de salud quiere poder hacer su estudio con 99 % de confianza y solo 10 % de probabilidades de cometer un error de tipo II.y responde las siguientes preguntas:¿A cuántos pacientes hay que hacer un seguimiento después de la intervención para determinar si se consiguió llegar a la proporción objetivo?¿Cómo varía este número si la hipótesis alternativa cambia a que la proporción aumentó?
+```{r}
+
+pwr.p.test(h = ES.h(0.95,0.5),sig.level = 0.01,power = 0.9,alternative = "two.sided")
+
+pwr.p.test(h = ES.h(0.95,0.5),sig.level = 0.01,power = 0.9,alternative = "greater")
+
+```
+30) Da un ejemplo de una pregunta de investigación sobre las asignaturas comunes en ingeniería que re-quiera utilizar una prueba exacta de Fisher. Explica bien qué variables están involucradas y enuncialas hipótesis a docimar.
+
+R: 2 familias de algoritmos son especializadas en resolver las instancias de un problema de optimizacion. Se escogieron 30 problemas, 17 de econtrar el camino mas corto entre nodos y 13 de la mochila 1-1. La variable involucrada es dicotomica, ya que involucra saber si es que el algoritmo puede o no resolver el problema. Asi:
+H0: Ambos algoritmos son igual de efectivos para resolver los problemas de optimizacion.
+Ha: Uno de los algoritmos es mas efectivo que el otro para resolver los problemas de optimizacion.
+
+31) Un estudio clínico reclutó a 32 pacientes con fatiga crónica para determinar si un tratamiento basadoen inyecciones intramusculares de magnesio es efectivo para esta condición. De los 15 pacientes que recibieron estas inyecciones, seleccionados de manera aleatoria, 12 reportaron sentirse mejor (80 %),mientras que solo 3 pacientes de los 17 que recibieron inyecciones placebo (18 %) reportaron mejorías.(a) ¿Se cumplen las condiciones para aplicar una prueba exacta de Fisher al problema enunciado?(b) ¿Cuáles serían las hipótesis nula y alternativa para esta prueba? (c) Independientemente de la respuesta anterior, aplica la prueba usando R.(d) ¿A qué conclusión lleva este procedimiento?.
+
+R: Primero verificamos las condiciones de la prueba, en donde la variable dicotomica es binaria, ya que solo puede tener 2 valores (Mejoria o no) y las observaciones son independientes, ya que las vacunas son aplicadas a distintos pacientes. 
+
+H0: La proporción de pacientes que mejoran con el tratamiento es igual a la proporción de pacientes que mejoran con el placebo.
+Ha: La proporción de pacientes que mejoran con el tratamiento es diferente a la proporción de pacientes que mejoran con el placebo.
+
+```{r}
+# Generamos la matriz de confusion
+matriz_confusion <- matrix(c(12, 3, 3, 14), nrow = 2, byrow = TRUE)
+
+# Aplicamos la prueba exacta de fisher
+fisher.test(matriz_confusion, alternative = "greater")
+```
+
+Como el p valor de la prueba es menor al nivel de significancia, entonces rechazamos la hipotesis nula en favor de la alternativa, y la proporcion en que mejoran los pacientes con la inyeccion es mayor que con el placebo.
+
+32) Antes del debate de candidatos presidenciales por televisión abierta, una encuesta consultó a 1.000 personas si apoyaban o no la legalización del aborto libre, encontrando 705 personas a favor y 295 encontra. Luego de que estas personas escucharon el debate, 663 se manifestaron a favor y 337 en contrade la propuesta legal. 73 encuestados cambiaron de opinión de en contra, a en apoyo de la ley; mientrasque 115 cambiaron su opinión a favor, para estar ahora en contra.(a) ¿Se cumplen las condiciones para aplicar una prueba de McNemar al problema enunciado?(b) ¿Cuáles serían las hipótesis nula y alternativa si usamos esta prueba?(c) Independientemente de la respuesta anterior, aplica la prueba usando R.(d) ¿A qué conclusión lleva este procedimiento?
+
+R: La prueba requiere que las variables sean dicotomicas, lo que se cumple, ya que tienen 2 valores (A favor o en contra). La prueba requiere que las observaciones sean independientes, lo que se cumple, ya que cada encuestado es independiente de los demas.
+H0: La proporción de personas a favor o en contra de la legalizacion del aborto es la misma antes y despues del debate.
+Ha: La proporción de personas a favor o en contra de la legalizacion del aborto es diferente antes y despues del debate.
+
+```{r}
+# Generamos la matriz de confusion
+matriz_confusion <- matrix(c(705,295,663,337), nrow = 2, byrow = TRUE)
+
+# Realizamos la prueba
+mcnemar.test(matriz_confusion)
+```
+
+Como el p valor es menor al nivel de significancia, entonces rechazamos la hipotesis nula en favor de la alternativa, y la proporcion de personas a favor o en contra de la legalizacion del aborto es diferente antes y despues del debate, lo que lleva a que si realizo un cambio de opinion.
+
+33) Las autoridades de la universidad desean conocer si las semanas de receso (sin actividades docentes)ayuda o no al descanso del estudiantado. Para eso seleccionaron 20 estudiantes de forma aleatoria y lesconsultaron si se sentían “cansada/o” o “descansada/o” en tres ocasiones: el lunes, miércoles y viernesde la primera semana de receso del semestre. Los resultados se muestran en la siguiente tabla, donde 0 representa cansancio y 1 descanso.(a) ¿Hay diferencias entre los tres periodos de tiempo sin actividades? No olvide enunciar las hipótesis,seleccionar una prueba para docimarlas y verificar si se cumplen las condiciones necesarias pararealizar la prueba seleccionada.(b) Si hay diferencias, ¿entre qué periodos se encuentran? No olvide justificar su respuesta.
+
+```{r}
+# Generamos la matriz de confusion
+matriz_confusion <- matrix(c(1,1,1,1,2,0,1,1,3,0,0,1,4,0,1,0,5,1,0,0,6,0,1,1,7,0,1,1,8,0,0,1,9,0,1,1,10,0,1,0,11,1,1,0,12,1,1,1,13,0,0,0,14,1,0,1,15,0,1,1,16,0,1,0,17,0,0,1,18,0,1,1,19,1,0,1,20,0,1,1), ncol=4, byrow = TRUE)
+df_confusion <- as.data.frame(matriz_confusion)
+colnames(df_confusion) <- c("id", "lunes", "martes", "viernes")
+```
+
+R: Como nos encontramos con mas de 2 variables dicotomicas binarias pareadas, entonces corresponde ocupar la prueba Q de cochran. La cual necesita que las variables sean dicotomicas, las observaciones sean independientes y que la muestra sea suficientemente grande, tal que el numero de bloques por el numero de tratamientos es mayor a 24, lo que se cumple.
+
+Asi las hipotesis serian:
+H0: La proporcion de cansancio es el mismo para todos los periodos de tiempo.
+Ha: La proporcion de cansancio es diferente para al menos un periodo de tiempo.
+
+```{r}
+# Convertimos los datos a largos donde la primera columna es el id del alumno, la segunda es el dia lunes, luego miercoles y por ultimo viernes
+library(tidyr)
+library(RVAideMemoire)
+
+df_largo <- pivot_longer(df_confusion,
+                         cols = c("lunes", "martes", "viernes"),
+                         names_to = "dia",
+                         values_to = "valor")
+
+# Realizamos la prueba Q de Cochran
+
+cochran.qtest(valor ~ dia | id, data = df_largo)
+```
+
+Como vemos el p valor es menor que el nivel de significancia por lo que rechazamos la hipotesis nula en favor de la alternativa, lo que indica que hay diferencias entre al menos un periodo de tiempo. Para determinar entre que periodos se encuentran, realizaremos una prueba post-hoc: 
+
+```{r}
+library(rcompanion)
+# Posthoc de Mcnemar
+pairwiseMcnemar(valor ~ dia | id, data = df_largo)
+```
+
+El p valor entre lunes-martes y martes-viernes es mayor que el nivel de significancia por lo que sus diferencias no son significativas, no asi lunes-viernes, por lo que podemos concluir que el lunes y viernes son los periodos donde hay diferencias significativas en la proporcion de cansancio.
+
+34) El conjunto de datos chickwts , disponible en R, registra el peso de 71 pollitos a las seis semanas denacidos y el tipo de alimento que cada pollito recibió. Para este conjunto de datos:(a) Verifica si se cumplen las condiciones para efectuar un procedimiento ANOVA de una vía paramuestras independientes.(b) Sin considerar el resultado anterior, efectúa el procedmiento ANOVA de una vía para muestrasindependientes a fin de determinar si existen diferencias en el peso de los pollitos de acuerdo altipo de alimento recibido.(c) En caso de identificar que existen diferencias significativas, lleva a cabo los análisis post-hoc y determina qué tipos de alimento presentan dichas diferencias. Compara los resultados obtenidos con los diferentes métodos.
+
+R: Como cada pollito es distinto las observaciones son independientes, la variable dependiente es continua y esta en escala de intervalos iguales, y solo tenemos una poblacion, entonces quedaria solo comprobar la normalidad de los datos para realizar la prueba ANOVA de una via paramuestras independientes.
+
+```{r}
+library(ggpubr)
+
+# Cargamos los datos
+data("chickwts")
+
+#Comprobamos normalidad
+tonos_azules = c ("steelblue","steelblue1","steelblue2","steelblue3","steelblue4","green")
+g <- ggqqplot (chickwts, x = "weight", y = "feed",color = "feed" , palette = tonos_azules)
+g <- g + facet_wrap(~ feed )
+g <- g + rremove ("x.ticks") + rremove ("x.text")
+g <- g + rremove ("y.ticks") + rremove ("y.text")
+g <- g + rremove ("axis.title")
+print ( g )
+
+#Comprobamos homogeneidad de varianzas
+library(car)
+leveneTest(weight ~ feed, data = chickwts)
+```
+
+La poblacion sigue razonablemente la normalidad, pero no cumple la condicion de homogeneidad, aunque esto no es problema ya que se menciona que ANOVA es una prueba robusta, aunque seremos mas estrictos y usaremos un alfa 0,1.
+
+```{r}
+library(ez)
+
+# Realizamos la prueba 
+modelo <- aov(weight ~ feed, data = chickwts,alpha = 0.1)
+summary(modelo)
+```
+
+Como vemos el p valor es menor que el nivel de significancia por lo que rechazamos la hipotesis nula en favor de la alternativa, lo que indica que hay diferencias entre al menos un tipo de alimento. Para determinar entre que tipos se encuentran, realizaremos una prueba post-hoc:
+
+```{r}
+# Realizamos el posthoc
+pairwise.t.test(chickwts$weight, chickwts$feed, p.adjust.method = "bonferroni")
+```
+Los p valores son menores para horsebean-casein, soybean-casein,sunflower-casein, sunflower-horsebean, por lo que podemos concluir que estos son los tipos de alimento que presentan diferencias significativas en el peso de los pollitos.
+
+Por ultimo verificamos el poder de la prueba realizada.
+```{r}
+library(pwr)
+pwr.anova.test(k = 6, 
+                n = 71/6, 
+                f = 0.25, 
+                sig.level = 0.1, 
+                power = NULL)
+```
+
+35) Una farmacéutica comparó tratamientos para la picazón usando como grupo de estudio 10 hombres deentre 20 y 30 años. Cada sujeto recibió un tratamiento diferente cada día, durante siete días consecu-tivos, en un orden temporal aleatorio. Para cada tratamiento, se les indujo comezón en los antebrazosmediante un estímulo llamado “cowage”, y los sujetos anotaron la duración del picor, en segundos. Sepuede acceder a estos datos usando la función read_csv() del paquete tidyverse mediante la siguientellamada: read_csv("http://statacumen.com/teach/ADA2/notes/ADA2_notes_Ch05_itch.csv") . Verifica siexisten diferencias en la duración de la comezón entre los fármacos Papaverina ( Papv ), Pentobarbitol( Pento ) y el placebo ( Placebo ). Enuncia las hipótesis y verifica si se cumplen las condiciones de laspruebas aplicadas. Utiliza la corrección de Benjamini y Hochberg para comparaciones múltiples de sernecesario
+
+```{r message=FALSE,warning=FALSE}
+# Cargamos los datos
+library(tidyverse)
+library(ggpubr)
+library(car)
+
+data <- read_csv("http://statacumen.com/teach/ADA2/notes/ADA2_notes_Ch05_itch.csv")
+
+# Filtramos por las columnas que nos interesan con su Paciente
+data <- data %>%
+  select(Patient, Papv, Pento, Placebo) 
+
+# Llevamos los datos a un formato largo manteniendo el Paciente de la observacion
+data_largo <- data %>%
+  pivot_longer(cols = -Patient, names_to = "tratamiento", values_to = "duracion")
+```
+
+Analizando los datos, vemos que la variable dependiente es continua y la independiente es dicotomica categorica de varios niveles, por lo que corresponde aplicar una prueba ANOVA de una via para muestras correlacionadas, ya que cada sujeto recibe los 3 tratamientos. De esta manera debemos verificar las condiciones para esta version de ANOVA:
+
+1) La variable dependiente es continua (tiempo) y la independiente es dicotomica categorica de varios niveles.
+2) Las observaciones son independientes, ya que cada sujeto recibe un tratamiento distinto.
+3) La variable dependiente sigue una distribucion normal, lo que podemos verificar con un grafico Q-Q.
+
+```{r}
+library(ggpubr)
+
+# Cargamos los datos
+data("chickwts")
+
+#Comprobamos normalidad
+tonos_azules = c ("steelblue","steelblue1","steelblue2","steelblue3","steelblue4","green")
+g <- ggqqplot (data_largo, x = "duracion", y = "tratamiento",color = "tratamiento" , palette = tonos_azules)
+g <- g + facet_wrap(~ tratamiento )
+g <- g + rremove ("x.ticks") + rremove ("x.text")
+g <- g + rremove ("y.ticks") + rremove ("y.text")
+g <- g + rremove ("axis.title")
+print ( g )
+```
+
+Como vemos la poblacion no sigue razonablemente la normalidad, ya que posee varios datos atipicos, lo que lleva a no cumplirse esta condicion y a necesitar una prueba no parametrica. Por lo que usaremos la prueba de Friedman, que es la version no paramétrica de ANOVA para muestras correlacionadas. La cual requiere que la variable dependiente sea a lo menos ordinal, las observaciones sean independiente y la variable independiente tenga a lo menos 3 niveles.
+
+Procedemos a enunciar las hipotesis:
+H0: La distribucion de duracion de la comezon es la misma para todos los tratamientos.
+Ha: La distribucion de duracion de la comezon es diferente para al menos un tratamiento.
+
+```{r}
+# Realizamos la prueba
+friedman.test(duracion ~ tratamiento | Patient, data = data_largo)
+```
+
+El p valor de la prueba es menor al nivel de significancia, por lo que rechazamos la hipotesis nula en favor de la alternativa, lo que indica que hay diferencias entre al menos un tratamiento. Para determinar entre que tratamientos se encuentran, realizaremos una prueba post-hoc:
+
+```{r}
+# Realizamos el posthoc de wilcoxon en su verion pareada
+
+pairwise.wilcox.test(data_largo$duracion, data_largo$tratamiento, p.adjust.method = "BH",paired = TRUE)
+```
+
+Asi el p valor entre pento-papv y placebo-papv es menor que le nivel de significancia, por lo que rechazamos la hipotesis nula en favor de la alternativa, lo que indica que hay diferencias entre estos tratamientos. Por lo que podemos concluir que el tratamiento Papaverina es el mejor para reducir la duracion de la comezon.
